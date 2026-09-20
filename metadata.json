@@ -1,0 +1,6 @@
+{
+  "name": "NoteCode++",
+  "description": "Powerful NoteCode++ text and code editor for Android featuring multi-tab editing, syntax highlighting, line numbers, find and replace, encoding tools, and developer utilities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
