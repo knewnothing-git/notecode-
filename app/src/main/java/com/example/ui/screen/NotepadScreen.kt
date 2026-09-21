@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -23,9 +24,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +39,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -93,6 +97,7 @@ fun NotepadScreen(
     // Active document title
     val activeDoc = uiState.documents.firstOrNull { it.id == uiState.activeDocumentId }
     val activeTitle = activeDoc?.title ?: "NoteCode++"
+    var showAboutDialog by remember { mutableStateOf(false) }
 
     // Storage Access Framework: Open File Launcher
     val openFileLauncher = rememberLauncherForActivityResult(
@@ -178,18 +183,27 @@ fun NotepadScreen(
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // App Logo Badge
-                    Box(
+                    // App Logo Badge with Android Symbol
+                    Row(
                         modifier = Modifier
-                            .size(28.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF388E3C)),
-                        contentAlignment = Alignment.Center
+                            .background(Color(0xFF2E7D32))
+                            .clickable { showAboutDialog = true }
+                            .padding(horizontal = 6.dp, vertical = 4.dp)
+                            .testTag("app_logo_badge"),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            imageVector = Icons.Default.Android,
+                            contentDescription = "Android",
+                            tint = Color(0xFF3DDC84),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = "++",
                             color = Color.White,
-                            fontSize = 14.sp,
+                            fontSize = 12.sp,
                             fontWeight = FontWeight.Black,
                             fontFamily = FontFamily.Monospace
                         )
@@ -201,25 +215,54 @@ fun NotepadScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "NoteCode++",
-                                fontSize = 16.sp,
+                                fontSize = 15.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = theme.text,
                                 fontFamily = FontFamily.Monospace
                             )
                             Spacer(modifier = Modifier.width(6.dp))
-                            // Active doc badge
-                            Box(
+                            // Android Edition pill tag
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
-                                    .background(theme.surface)
-                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    .background(Color(0xFF3DDC84).copy(alpha = 0.18f))
+                                    .clickable { showAboutDialog = true }
+                                    .padding(horizontal = 5.dp, vertical = 2.dp)
                             ) {
+                                Icon(
+                                    imageVector = Icons.Default.Android,
+                                    contentDescription = "Android Edition",
+                                    tint = if (theme.isDark) Color(0xFF3DDC84) else Color(0xFF1B5E20),
+                                    modifier = Modifier.size(11.dp)
+                                )
+                                Spacer(modifier = Modifier.width(3.dp))
                                 Text(
-                                    text = activeTitle,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = if (uiState.isModified) Color(0xFFFF5252) else theme.bookmarkColor,
+                                    text = "Android",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (theme.isDark) Color(0xFF3DDC84) else Color(0xFF1B5E20),
                                     fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(2.dp))
+                        // Active doc subtitle badge
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = activeTitle,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (uiState.isModified) Color(0xFFFF5252) else theme.bookmarkColor,
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1
+                            )
+                            if (uiState.isModified) {
+                                Text(
+                                    text = " *",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFFFF5252)
                                 )
                             }
                         }
@@ -487,6 +530,65 @@ fun NotepadScreen(
             currentTheme = theme,
             onSelectTheme = { viewModel.setTheme(it) },
             onDismiss = { viewModel.setShowThemeDialog(false) }
+        )
+    }
+
+    if (showAboutDialog) {
+        AlertDialog(
+            onDismissRequest = { showAboutDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFF2E7D32))
+                            .padding(horizontal = 6.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Android,
+                            contentDescription = "Android",
+                            tint = Color(0xFF3DDC84),
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "++",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Black,
+                            fontFamily = FontFamily.Monospace
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Column {
+                        Text("NoteCode++", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Text("for Android", fontSize = 12.sp, color = Color(0xFF3DDC84), fontWeight = FontWeight.SemiBold)
+                    }
+                }
+            },
+            text = {
+                Column {
+                    Text(
+                        text = "A desktop-class text and source code editor engineered specifically for Android devices.",
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = "• Multi-tab document workspace\n• Syntax highlighting for 12+ languages\n• Android Storage Access Framework (SAF) integration\n• Line operations, bookmarks, and encoding tools\n• 100% offline, privacy-first, zero analytics",
+                        fontSize = 12.sp,
+                        lineHeight = 17.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showAboutDialog = false }) {
+                    Text("Close")
+                }
+            }
         )
     }
 }

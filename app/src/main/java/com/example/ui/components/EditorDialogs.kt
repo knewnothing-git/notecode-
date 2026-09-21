@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -366,23 +367,30 @@ fun SupportTipJarDialog(
         onDismissRequest = onDismiss,
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
+                Row(
                     modifier = Modifier
-                        .size(24.dp)
-                        .clip(RoundedCornerShape(4.dp))
-                        .background(Color(0xFF388E3C)),
-                    contentAlignment = Alignment.Center
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFF2E7D32))
+                        .padding(horizontal = 6.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    Icon(
+                        imageVector = Icons.Default.Android,
+                        contentDescription = "Android",
+                        tint = Color(0xFF3DDC84),
+                        modifier = Modifier.size(15.dp)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
                     Text(
                         text = "++",
                         color = Color.White,
-                        fontSize = 12.sp,
+                        fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Monospace
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Support NoteCode++", fontWeight = FontWeight.Bold)
+                Text("Support NoteCode++ for Android", fontWeight = FontWeight.Bold)
             }
         },
         text = {
