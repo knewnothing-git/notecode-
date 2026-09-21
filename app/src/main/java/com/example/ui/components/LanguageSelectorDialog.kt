@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -96,6 +97,7 @@ fun LanguageSelectorDialog(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .defaultMinSize(minHeight = 48.dp)
                                 .clip(RoundedCornerShape(6.dp))
                                 .background(if (isSelected) theme.bookmarkColor.copy(alpha = 0.15f) else Color.Transparent)
                                 .clickable { onLanguageSelected(lang) }

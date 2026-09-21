@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -187,6 +188,7 @@ fun ThemeSelectorDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
                             .clip(RoundedCornerShape(6.dp))
                             .background(if (isSelected) theme.bookmarkColor.copy(alpha = 0.15f) else Color.Transparent)
                             .clickable { onSelectTheme(theme) }
@@ -335,6 +337,7 @@ private fun LineToolActionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .defaultMinSize(minHeight = 48.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(theme.surface)
             .clickable(onClick = onClick)
@@ -366,7 +369,10 @@ fun SupportTipJarDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -390,7 +396,12 @@ fun SupportTipJarDialog(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Support NoteCode++ for Android", fontWeight = FontWeight.Bold)
+                Text(
+                    text = "Support NoteCode++",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    modifier = Modifier.weight(1f)
+                )
             }
         },
         text = {
@@ -414,6 +425,7 @@ fun SupportTipJarDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
                             .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(theme.surface)

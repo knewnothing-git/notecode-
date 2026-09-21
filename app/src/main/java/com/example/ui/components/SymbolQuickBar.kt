@@ -6,6 +6,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -67,7 +68,7 @@ fun SymbolQuickBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(38.dp),
+            .height(48.dp),
         color = theme.gutterBackground,
         tonalElevation = 2.dp
     ) {
@@ -75,24 +76,24 @@ fun SymbolQuickBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(scrollState)
-                .padding(horizontal = 4.dp, vertical = 4.dp),
+                .padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             quickSymbols.forEach { (label, toInsert) ->
                 Box(
                     modifier = Modifier
-                        .height(30.dp)
-                        .clip(RoundedCornerShape(4.dp))
+                        .defaultMinSize(minWidth = 44.dp, minHeight = 44.dp)
+                        .clip(RoundedCornerShape(6.dp))
                         .background(theme.surface)
                         .clickable { onInsertSymbol(toInsert) }
-                        .padding(horizontal = 10.dp),
+                        .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = label,
                         color = theme.text,
-                        fontSize = 12.sp,
+                        fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.testTag("symbol_quick_$label")

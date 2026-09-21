@@ -34,6 +34,7 @@ enum class CaseType {
 }
 
 data class EditorUiState(
+    val isLoading: Boolean = true,
     val documents: List<DocumentEntity> = emptyList(),
     val activeDocumentId: Long? = null,
     val editorValue: TextFieldValue = TextFieldValue(""),
@@ -98,6 +99,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                         val lang = SupportedLanguages.findById(activeDoc.language)
                         val bookmarksSet = parseBookmarks(activeDoc.bookmarks)
                         current.copy(
+                            isLoading = false,
                             documents = docList,
                             activeDocumentId = activeId,
                             editorValue = TextFieldValue(activeDoc.content, TextRange(activeDoc.cursorPosition.coerceIn(0, activeDoc.content.length))),
@@ -108,7 +110,7 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                             isModified = false
                         )
                     } else {
-                        current.copy(documents = docList, activeDocumentId = activeId)
+                        current.copy(isLoading = false, documents = docList, activeDocumentId = activeId)
                     }
                 }
             }
@@ -704,15 +706,38 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
 
     fun increaseFontSize() {
         _uiState.update {
-            val newSize = (it.fontSizeSp + 2f).coerceAtMost(28f)
+            val newSize = (it.fontSizeSp + 2f).coerceAtMost(36f)
+            showFeedback("Zoom: ${newSize.toInt()} sp")
             it.copy(fontSizeSp = newSize)
         }
     }
 
     fun decreaseFontSize() {
         _uiState.update {
-            val newSize = (it.fontSizeSp - 2f).coerceAtLeast(10f)
+            val newSize = (it.fontSizeSp - 2f).coerceAtLeast(8f)
+            showFeedback("Zoom: ${newSize.toInt()} sp")
             it.copy(fontSizeSp = newSize)
+        }
+    }
+
+    fun onPinchZoom(zoomMultiplier: Float) {
+        _uiState.update {
+            val newSize = (it.fontSizeSp * zoomMultiplier).coerceIn(8f, 36f)
+            it.copy(fontSizeSp = newSize)
+        }
+    }
+
+    fun resetFontSize() {
+        _uiState.update {
+            val next = if (kotlin.math.abs(it.fontSizeSp - 14f) < 0.3f) 18f else 14f
+            showFeedback("Zoom reset: ${next.toInt()} sp")
+            it.copy(fontSizeSp = next)
+        }
+    }
+
+    fun setFontSize(sizeSp: Float) {
+        _uiState.update {
+            it.copy(fontSizeSp = sizeSp.coerceIn(8f, 36f))
         }
     }
 

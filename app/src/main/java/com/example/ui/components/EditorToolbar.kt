@@ -110,7 +110,7 @@ fun EditorToolbar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(48.dp),
         color = theme.surface,
         tonalElevation = 1.dp
     ) {
@@ -514,14 +514,14 @@ private fun ToolbarButton(
     IconButton(
         onClick = onClick,
         modifier = Modifier
-            .size(36.dp)
+            .size(48.dp)
             .testTag(testTag)
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = tint,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(22.dp)
         )
     }
 }

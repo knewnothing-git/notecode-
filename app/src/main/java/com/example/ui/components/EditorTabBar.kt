@@ -7,6 +7,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -55,7 +56,7 @@ fun EditorTabBar(
     Surface(
         modifier = modifier
             .fillMaxWidth()
-            .height(44.dp),
+            .height(48.dp),
         color = theme.gutterBackground,
         tonalElevation = 2.dp
     ) {
@@ -84,15 +85,15 @@ fun EditorTabBar(
             IconButton(
                 onClick = onNewTab,
                 modifier = Modifier
-                    .padding(horizontal = 4.dp)
-                    .size(36.dp)
+                    .padding(horizontal = 2.dp)
+                    .size(48.dp)
                     .testTag("add_tab_button")
             ) {
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "New Tab",
-                    tint = theme.text.copy(alpha = 0.8f),
-                    modifier = Modifier.size(18.dp)
+                    tint = theme.text,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -115,16 +116,17 @@ private fun DocumentTabItem(
 
     Box(
         modifier = Modifier
-            .padding(start = 4.dp, end = 2.dp, top = 4.dp)
+            .padding(start = 4.dp, end = 2.dp, top = 2.dp, bottom = 2.dp)
             .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
             .background(tabBg)
             .border(
                 width = 1.dp,
-                color = if (isSelected) borderColor.copy(alpha = 0.6f) else Color.Transparent,
+                color = if (isSelected) borderColor.copy(alpha = 0.8f) else Color.Transparent,
                 shape = RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 10.dp, vertical = 6.dp),
+            .defaultMinSize(minHeight = 44.dp)
+            .padding(start = 10.dp, end = 4.dp),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -152,21 +154,22 @@ private fun DocumentTabItem(
                 modifier = Modifier.widthIn(max = 140.dp)
             )
 
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
 
-            // Close tab 'x' button
+            // Close tab 'x' button with accessible tap target
             Box(
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(40.dp)
                     .clip(CircleShape)
-                    .clickable(onClick = onClose),
+                    .clickable(onClick = onClose)
+                    .testTag("close_tab_${title}"),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Close $title",
-                    tint = textColor.copy(alpha = 0.7f),
-                    modifier = Modifier.size(12.dp)
+                    tint = textColor,
+                    modifier = Modifier.size(14.dp)
                 )
             }
         }

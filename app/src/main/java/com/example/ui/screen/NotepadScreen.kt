@@ -7,16 +7,20 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -26,13 +30,19 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Android
 import androidx.compose.material.icons.filled.Code
+import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -57,6 +67,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -175,52 +187,66 @@ fun NotepadScreen(
         topBar = {
             Surface(
                 color = theme.gutterBackground,
-                tonalElevation = 3.dp
+                tonalElevation = 3.dp,
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                        .statusBarsPadding()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // App Logo Badge with Android Symbol
-                    Row(
+                    // App Logo Badge with Android Symbol & >=48dp tap target
+                    Box(
                         modifier = Modifier
-                            .clip(RoundedCornerShape(6.dp))
-                            .background(Color(0xFF2E7D32))
+                            .defaultMinSize(minWidth = 48.dp, minHeight = 48.dp)
                             .clickable { showAboutDialog = true }
-                            .padding(horizontal = 6.dp, vertical = 4.dp)
                             .testTag("app_logo_badge"),
-                        verticalAlignment = Alignment.CenterVertically
+                        contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Android,
-                            contentDescription = "Android",
-                            tint = Color(0xFF3DDC84),
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(3.dp))
-                        Text(
-                            text = "++",
-                            color = Color.White,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Black,
-                            fontFamily = FontFamily.Monospace
-                        )
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF2E7D32))
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Android,
+                                contentDescription = "Android",
+                                tint = Color(0xFF3DDC84),
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(3.dp))
+                            Text(
+                                text = "++",
+                                color = Color.White,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Black,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.width(10.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
 
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(vertical = 2.dp)
+                    ) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = "NoteCode++",
-                                fontSize = 15.sp,
+                                fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = theme.text,
-                                fontFamily = FontFamily.Monospace
+                                fontFamily = FontFamily.Monospace,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(6.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
                             // Android Edition pill tag
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -228,7 +254,7 @@ fun NotepadScreen(
                                     .clip(RoundedCornerShape(4.dp))
                                     .background(Color(0xFF3DDC84).copy(alpha = 0.18f))
                                     .clickable { showAboutDialog = true }
-                                    .padding(horizontal = 5.dp, vertical = 2.dp)
+                                    .padding(horizontal = 4.dp, vertical = 2.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Android,
@@ -236,7 +262,7 @@ fun NotepadScreen(
                                     tint = if (theme.isDark) Color(0xFF3DDC84) else Color(0xFF1B5E20),
                                     modifier = Modifier.size(11.dp)
                                 )
-                                Spacer(modifier = Modifier.width(3.dp))
+                                Spacer(modifier = Modifier.width(2.dp))
                                 Text(
                                     text = "Android",
                                     fontSize = 10.sp,
@@ -255,7 +281,8 @@ fun NotepadScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (uiState.isModified) Color(0xFFFF5252) else theme.bookmarkColor,
                                 fontFamily = FontFamily.Monospace,
-                                maxLines = 1
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             if (uiState.isModified) {
                                 Text(
@@ -268,17 +295,17 @@ fun NotepadScreen(
                         }
                     }
 
-                    // Quick Header actions
+                    // Quick Header actions with >=44-48dp touch targets
                     IconButton(
                         onClick = { viewModel.createNewDocument() },
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(44.dp)
                             .testTag("header_new_file_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
                             contentDescription = "New File",
-                            tint = theme.text.copy(alpha = 0.85f),
+                            tint = theme.text,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -286,13 +313,13 @@ fun NotepadScreen(
                     IconButton(
                         onClick = { viewModel.saveActiveDocument() },
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(44.dp)
                             .testTag("header_save_file_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Save,
                             contentDescription = "Save File",
-                            tint = if (uiState.isModified) Color(0xFF4CAF50) else theme.text.copy(alpha = 0.85f),
+                            tint = if (uiState.isModified) Color(0xFF4CAF50) else theme.text,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -300,13 +327,13 @@ fun NotepadScreen(
                     IconButton(
                         onClick = { viewModel.toggleFindBar(replaceMode = false) },
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(44.dp)
                             .testTag("header_search_button")
                     ) {
                         Icon(
                             imageVector = Icons.Default.Search,
                             contentDescription = "Search",
-                            tint = theme.text.copy(alpha = 0.85f),
+                            tint = theme.text,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -326,11 +353,13 @@ fun NotepadScreen(
                     totalLines = totalLines,
                     lineEnding = uiState.activeLineEnding,
                     encoding = uiState.activeEncoding,
+                    fontSizeSp = uiState.fontSizeSp,
                     isReadOnly = uiState.isReadOnly,
                     theme = theme,
                     onLanguageClick = { viewModel.setShowLanguageDialog(true) },
                     onLineEndingClick = { viewModel.toggleLineEnding() },
                     onEncodingClick = { viewModel.toggleEncoding() },
+                    onZoomClick = { viewModel.resetFontSize() },
                     onReadOnlyClick = { viewModel.toggleReadOnly() }
                 )
             }
@@ -426,26 +455,135 @@ fun NotepadScreen(
                 )
             }
 
-            // 5. Editor Canvas (Gutter + Text Field)
-            EditorCanvas(
-                editorValue = uiState.editorValue,
-                language = uiState.activeLanguage,
-                theme = theme,
-                bookmarks = uiState.bookmarks,
-                currentLineNumber = currentLine,
-                wordWrap = uiState.wordWrap,
-                showWhitespace = uiState.showWhitespace,
-                fontSizeSp = uiState.fontSizeSp,
-                isReadOnly = uiState.isReadOnly,
-                searchQuery = uiState.searchQuery,
-                activeSearchIndex = uiState.activeSearchIndex,
-                searchCaseSensitive = uiState.searchCaseSensitive,
-                searchWholeWord = uiState.searchWholeWord,
-                searchRegex = uiState.searchRegex,
-                onValueChange = { viewModel.onEditorValueChanged(it) },
-                onToggleBookmark = { viewModel.toggleBookmark(it) },
-                modifier = Modifier.weight(1f)
-            )
+            // 5. Editor Canvas / Loading / Empty State
+            when {
+                uiState.isLoading -> {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .background(theme.background),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = theme.bookmarkColor,
+                                modifier = Modifier.size(36.dp)
+                            )
+                            Spacer(modifier = Modifier.height(14.dp))
+                            Text(
+                                text = "Loading workspace...",
+                                color = theme.text,
+                                fontSize = 13.sp,
+                                fontFamily = FontFamily.Monospace
+                            )
+                        }
+                    }
+                }
+                uiState.documents.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .background(theme.background)
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier.widthIn(max = 320.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Description,
+                                contentDescription = null,
+                                tint = theme.gutterText,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                text = "No Documents Open",
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = theme.text,
+                                fontFamily = FontFamily.Monospace
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Create a new document or open a file from storage to begin editing.",
+                                fontSize = 13.sp,
+                                textAlign = TextAlign.Center,
+                                color = theme.gutterText,
+                                lineHeight = 18.sp
+                            )
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Button(
+                                    onClick = { viewModel.createNewDocument() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = theme.bookmarkColor),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier
+                                        .defaultMinSize(minHeight = 48.dp)
+                                        .testTag("empty_state_new_doc_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Add,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("New File", fontSize = 13.sp)
+                                }
+                                OutlinedButton(
+                                    onClick = { openFileLauncher.launch(arrayOf("*/*", "text/*")) },
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier
+                                        .defaultMinSize(minHeight = 48.dp)
+                                        .testTag("empty_state_open_file_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.FileOpen,
+                                        contentDescription = null,
+                                        tint = theme.text,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text("Open File", color = theme.text, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                }
+                else -> {
+                    EditorCanvas(
+                        editorValue = uiState.editorValue,
+                        language = uiState.activeLanguage,
+                        theme = theme,
+                        bookmarks = uiState.bookmarks,
+                        currentLineNumber = currentLine,
+                        wordWrap = uiState.wordWrap,
+                        showWhitespace = uiState.showWhitespace,
+                        fontSizeSp = uiState.fontSizeSp,
+                        isReadOnly = uiState.isReadOnly,
+                        searchQuery = uiState.searchQuery,
+                        activeSearchIndex = uiState.activeSearchIndex,
+                        searchCaseSensitive = uiState.searchCaseSensitive,
+                        searchWholeWord = uiState.searchWholeWord,
+                        searchRegex = uiState.searchRegex,
+                        onValueChange = { viewModel.onEditorValueChanged(it) },
+                        onToggleBookmark = { viewModel.toggleBookmark(it) },
+                        onPinchZoom = { viewModel.onPinchZoom(it) },
+                        onResetZoom = { viewModel.resetFontSize() },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
         }
     }
 

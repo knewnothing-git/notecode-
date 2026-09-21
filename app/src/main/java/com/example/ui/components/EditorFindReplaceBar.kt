@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -83,17 +84,17 @@ fun EditorFindReplaceBar(
                 Box(
                     modifier = Modifier
                         .weight(1f)
-                        .height(36.dp)
+                        .height(40.dp)
                         .clip(RoundedCornerShape(4.dp))
                         .background(theme.background)
-                        .border(1.dp, theme.gutterText.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                        .border(1.dp, theme.gutterText.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                         .padding(horizontal = 8.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
                     if (searchQuery.isEmpty()) {
                         Text(
                             text = "Find...",
-                            color = theme.gutterText.copy(alpha = 0.6f),
+                            color = theme.gutterText,
                             fontSize = 13.sp,
                             fontFamily = FontFamily.Monospace
                         )
@@ -114,8 +115,6 @@ fun EditorFindReplaceBar(
                     )
                 }
 
-                Spacer(modifier = Modifier.width(6.dp))
-
                 // Match counter badge
                 val matchInfo = if (searchQuery.isEmpty()) {
                     ""
@@ -135,19 +134,19 @@ fun EditorFindReplaceBar(
                     )
                 }
 
-                // Prev / Next Arrows
+                // Prev / Next Arrows with >=48dp tap target
                 IconButton(
                     onClick = onFindPrevious,
                     enabled = matchCount > 0,
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(44.dp)
                         .testTag("find_prev_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowUpward,
                         contentDescription = "Previous Match",
                         tint = if (matchCount > 0) theme.text else theme.gutterText.copy(alpha = 0.4f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -155,18 +154,40 @@ fun EditorFindReplaceBar(
                     onClick = onFindNext,
                     enabled = matchCount > 0,
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(44.dp)
                         .testTag("find_next_button")
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowDownward,
                         contentDescription = "Next Match",
                         tint = if (matchCount > 0) theme.text else theme.gutterText.copy(alpha = 0.4f),
-                        modifier = Modifier.size(16.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
-                // Options: Case Sensitive [Aa], Whole Word [W], Regex [.*]
+                // Close search bar
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier
+                        .size(44.dp)
+                        .testTag("close_find_bar_button")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close Find Bar",
+                        tint = theme.text,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Options Row (Aa, W, .*)
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 OptionToggleButton(
                     label = "Aa",
                     isActive = searchCaseSensitive,
@@ -190,21 +211,6 @@ fun EditorFindReplaceBar(
                     tooltip = "Regular Expression",
                     onClick = onToggleRegex
                 )
-
-                // Close search bar
-                IconButton(
-                    onClick = onClose,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .testTag("close_find_bar_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Close Find Bar",
-                        tint = theme.text.copy(alpha = 0.7f),
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
             }
 
             // Replace Row (If Replace Mode is active)
@@ -217,17 +223,17 @@ fun EditorFindReplaceBar(
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .height(36.dp)
+                            .height(40.dp)
                             .clip(RoundedCornerShape(4.dp))
                             .background(theme.background)
-                            .border(1.dp, theme.gutterText.copy(alpha = 0.3f), RoundedCornerShape(4.dp))
+                            .border(1.dp, theme.gutterText.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
                             .padding(horizontal = 8.dp),
                         contentAlignment = Alignment.CenterStart
                     ) {
                         if (replaceQuery.isEmpty()) {
                             Text(
                                 text = "Replace with...",
-                                color = theme.gutterText.copy(alpha = 0.6f),
+                                color = theme.gutterText,
                                 fontSize = 13.sp,
                                 fontFamily = FontFamily.Monospace
                             )
@@ -248,7 +254,7 @@ fun EditorFindReplaceBar(
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
 
                     Button(
                         onClick = onReplaceCurrent,
@@ -259,7 +265,7 @@ fun EditorFindReplaceBar(
                         ),
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier
-                            .height(34.dp)
+                            .height(40.dp)
                             .testTag("replace_button")
                     ) {
                         Text("Replace", fontSize = 12.sp)
@@ -272,10 +278,10 @@ fun EditorFindReplaceBar(
                         enabled = matchCount > 0,
                         shape = RoundedCornerShape(4.dp),
                         modifier = Modifier
-                            .height(34.dp)
+                            .height(40.dp)
                             .testTag("replace_all_button")
                     ) {
-                        Text("Replace All", fontSize = 12.sp, color = theme.text)
+                        Text("All", fontSize = 12.sp, color = theme.text)
                     }
                 }
             }
@@ -291,26 +297,26 @@ private fun OptionToggleButton(
     tooltip: String,
     onClick: () -> Unit
 ) {
-    val bg = if (isActive) theme.bookmarkColor else Color.Transparent
-    val textColor = if (isActive) Color.White else theme.text.copy(alpha = 0.7f)
+    val bg = if (isActive) theme.bookmarkColor else theme.background
+    val textColor = if (isActive) Color.White else theme.text
 
     Box(
         modifier = Modifier
-            .padding(horizontal = 2.dp)
-            .size(width = 26.dp, height = 26.dp)
-            .clip(RoundedCornerShape(3.dp))
+            .defaultMinSize(minWidth = 44.dp, minHeight = 36.dp)
+            .clip(RoundedCornerShape(4.dp))
             .background(bg)
             .border(
                 1.dp,
-                if (isActive) theme.bookmarkColor else theme.gutterText.copy(alpha = 0.3f),
-                RoundedCornerShape(3.dp)
+                if (isActive) theme.bookmarkColor else theme.gutterText.copy(alpha = 0.5f),
+                RoundedCornerShape(4.dp)
             )
-            .clickable(onClick = onClick),
+            .clickable(onClick = onClick)
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = label,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             fontFamily = FontFamily.Monospace,
             color = textColor

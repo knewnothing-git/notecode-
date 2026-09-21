@@ -47,6 +47,12 @@
   - USB OTG drives
   - Cloud storage providers (Google Drive, Nextcloud, OneDrive)
 
+### 🔍 Pinch-to-Zoom & Typography Sizing
+- **Two-Finger Pinch Gestures**: Smoothly pinch-in to decrease or pinch-out to increase editor text size dynamically (8sp to 36sp).
+- **Interactive HUD Overlay**: Displays live font size and scale percentage with a one-tap **Reset** button to return to 100% (14sp).
+- **Dynamic Gutter & Alignment**: Line number gutter and code canvas scale in exact lockstep without clipping or cursor jitter.
+- **Status Bar Zoom Pill**: Quick at-a-glance zoom indicator in the status bar with tap-to-reset.
+
 ### 🔍 Find & Replace
 - Fast in-editor search with real-time match highlighting.
 - Next / Previous match navigation.
