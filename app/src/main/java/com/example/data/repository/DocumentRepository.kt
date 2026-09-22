@@ -18,6 +18,8 @@ class DocumentRepository(private val documentDao: DocumentDao) {
 
     suspend fun deleteById(id: Long) = documentDao.deleteDocumentById(id)
 
+    suspend fun deleteAll() = documentDao.deleteAllDocuments()
+
     suspend fun seedInitialDataIfEmpty() {
         if (documentDao.getDocumentCount() == 0) {
             val defaultDocs = listOf(

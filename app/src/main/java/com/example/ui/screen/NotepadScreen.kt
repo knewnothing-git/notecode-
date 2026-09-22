@@ -1,5 +1,10 @@
 package com.example.ui.screen
 
+import android.content.ContentUris
+import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.MediaStore
+import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
@@ -94,6 +99,205 @@ import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 
+private fun extractFileNameFromUri(context: android.content.Context, uri: Uri, content: String): String {
+    var resolvedName: String? = null
+
+    // Method 1: Query the URI directly with projection = null to fetch all available metadata columns
+    try {
+        context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val candidateColumns = listOf(
+                    OpenableColumns.DISPLAY_NAME,
+                    "_display_name",
+                    "title",
+                    "_data"
+                )
+                for (col in candidateColumns) {
+                    val idx = cursor.getColumnIndex(col)
+                    if (idx >= 0) {
+                        val str = cursor.getString(idx)
+                        if (!str.isNullOrBlank() && !str.startsWith("document:") && !str.startsWith("raw:") && !str.all { it.isDigit() }) {
+                            resolvedName = str.substringAfterLast('/')
+                            break
+                        }
+                    }
+                }
+            }
+        }
+    } catch (_: Exception) {}
+
+    // Method 2: If resolvedName is still missing or looks like an internal ID, resolve via MediaStore or DocumentContract
+    if (resolvedName == null || resolvedName.startsWith("document:") || resolvedName.all { it.isDigit() }) {
+        try {
+            if (DocumentsContract.isDocumentUri(context, uri)) {
+                val docId = DocumentsContract.getDocumentId(uri)
+                if (docId.startsWith("raw:") || docId.startsWith("primary:")) {
+                    resolvedName = docId.substringAfter(':').substringAfterLast('/')
+                } else {
+                    val numericId = docId.substringAfterLast(':').toLongOrNull()
+                    if (numericId != null) {
+                        val mediaUri = ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), numericId)
+                        context.contentResolver.query(mediaUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                            if (cursor.moveToFirst()) {
+                                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                                if (idx >= 0) {
+                                    val name = cursor.getString(idx)
+                                    if (!name.isNullOrBlank()) resolvedName = name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    // Method 3: Fallback from URI path segments
+    if (resolvedName == null || resolvedName.startsWith("document:") || resolvedName.all { it.isDigit() }) {
+        val segment = uri.lastPathSegment ?: ""
+        if (segment.isNotEmpty() && !segment.startsWith("document:") && !segment.all { it.isDigit() }) {
+            resolvedName = segment.substringAfterLast('/')
+        }
+    }
+
+    // Method 4: Infer from document content if name is still raw or generic
+    if (resolvedName == null || resolvedName.startsWith("document:") || resolvedName.all { it.isDigit() } || resolvedName == "document.txt") {
+        val firstLines = content.lineSequence().take(15).toList()
+        val headingLine = firstLines.firstOrNull { it.trimStart().startsWith("#") }
+        if (headingLine != null) {
+            val titleText = headingLine.trimStart('#', ' ').take(30).trim()
+            if (titleText.isNotEmpty()) {
+                val sanitized = titleText.replace(Regex("[^a-zA-Z0-9 _.-]"), "").trim()
+                if (sanitized.isNotBlank()) {
+                    resolvedName = "$sanitized.md"
+                }
+            }
+        }
+    }
+
+    // Clean any remaining invalid prefixes
+    var finalName = resolvedName ?: "document.txt"
+    if (finalName.startsWith("document:")) {
+        finalName = finalName.removePrefix("document:").trim()
+    }
+    if (finalName.isEmpty() || finalName.all { it.isDigit() }) {
+        finalName = "document.txt"
+    }
+
+    return finalName
+}
+
+private fun extractSavedFileName(
+    context: android.content.Context,
+    uri: Uri,
+    suggestedName: String,
+    fallbackTitle: String
+): String {
+    var resolvedName: String? = null
+
+    // Method 1: Query OpenableColumns.DISPLAY_NAME on the returned document URI
+    try {
+        context.contentResolver.query(
+            uri,
+            arrayOf(OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) {
+                val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (idx != -1) {
+                    val name = cursor.getString(idx)
+                    if (!name.isNullOrBlank() && !name.startsWith("document:") && !name.startsWith("raw:") && !name.all { it.isDigit() }) {
+                        resolvedName = name.substringAfterLast('/')
+                    }
+                }
+            }
+        }
+    } catch (_: Exception) {}
+
+    // Method 2: Query all metadata columns if DISPLAY_NAME was not found or was numeric
+    if (resolvedName == null) {
+        try {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val candidateColumns = listOf(
+                        OpenableColumns.DISPLAY_NAME,
+                        "_display_name",
+                        "title",
+                        "_data"
+                    )
+                    for (col in candidateColumns) {
+                        val idx = cursor.getColumnIndex(col)
+                        if (idx >= 0) {
+                            val str = cursor.getString(idx)
+                            if (!str.isNullOrBlank() && !str.startsWith("document:") && !str.startsWith("raw:") && !str.all { it.isDigit() }) {
+                                resolvedName = str.substringAfterLast('/')
+                                break
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    // Method 3: DocumentContract / MediaStore check if document URI
+    if (resolvedName == null && DocumentsContract.isDocumentUri(context, uri)) {
+        try {
+            val docId = DocumentsContract.getDocumentId(uri)
+            if (docId.startsWith("raw:") || docId.startsWith("primary:")) {
+                val part = docId.substringAfter(':').substringAfterLast('/')
+                if (part.isNotEmpty() && !part.all { it.isDigit() }) {
+                    resolvedName = part
+                }
+            } else {
+                val numericId = docId.substringAfterLast(':').toLongOrNull()
+                if (numericId != null) {
+                    val mediaUri = ContentUris.withAppendedId(MediaStore.Files.getContentUri("external"), numericId)
+                    context.contentResolver.query(mediaUri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (idx >= 0) {
+                                val name = cursor.getString(idx)
+                                if (!name.isNullOrBlank() && !name.startsWith("document:") && !name.all { it.isDigit() }) {
+                                    resolvedName = name
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (_: Exception) {}
+    }
+
+    // Method 4: URI lastPathSegment if valid name and not pure digits
+    if (resolvedName == null) {
+        val segment = uri.lastPathSegment ?: ""
+        if (segment.isNotEmpty() && !segment.startsWith("document:") && !segment.all { it.isDigit() }) {
+            val clean = segment.substringAfterLast('/')
+            if (clean.isNotEmpty() && !clean.all { it.isDigit() }) {
+                resolvedName = clean
+            }
+        }
+    }
+
+    // Method 5: Fallback to user's suggested name or active document title
+    if (resolvedName == null || resolvedName.startsWith("document:") || resolvedName.all { it.isDigit() } || resolvedName == "document.txt") {
+        resolvedName = suggestedName.ifBlank { fallbackTitle }.ifBlank { "document.txt" }
+    }
+
+    var finalName = resolvedName
+    if (finalName.startsWith("document:")) {
+        finalName = finalName.removePrefix("document:").trim()
+    }
+    if (finalName.isEmpty() || finalName.all { it.isDigit() }) {
+        finalName = suggestedName.ifBlank { fallbackTitle }.ifBlank { "document.txt" }
+    }
+
+    return finalName
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotepadScreen(
@@ -123,7 +327,9 @@ fun NotepadScreen(
                             BufferedReader(InputStreamReader(inputStream)).readText()
                         } ?: ""
                     }
-                    val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: "document.txt"
+                    val fileName = withContext(Dispatchers.IO) {
+                        extractFileNameFromUri(context, uri, content)
+                    }
                     viewModel.openFileFromSystem(fileName, content)
                 } catch (e: Exception) {
                     snackbarHostState.showSnackbar("Error opening file: ${e.localizedMessage}")
@@ -132,9 +338,11 @@ fun NotepadScreen(
         }
     }
 
+    var pendingSaveAsSuggestedName by remember { mutableStateOf("") }
+
     // Storage Access Framework: Export / Save As Launcher
     val exportFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/*")
+        contract = ActivityResultContracts.CreateDocument("*/*")
     ) { uri ->
         if (uri != null) {
             coroutineScope.launch {
@@ -146,10 +354,12 @@ fun NotepadScreen(
                             }
                         }
                     }
-                    val fileName = uri.lastPathSegment?.substringAfterLast('/') ?: activeTitle
-                    snackbarHostState.showSnackbar("Exported successfully as $fileName")
+                    val fileName = withContext(Dispatchers.IO) {
+                        extractSavedFileName(context, uri, pendingSaveAsSuggestedName, activeTitle)
+                    }
+                    viewModel.saveActiveDocumentAs(fileName)
                 } catch (e: Exception) {
-                    snackbarHostState.showSnackbar("Export failed: ${e.localizedMessage}")
+                    snackbarHostState.showSnackbar("Save failed: ${e.localizedMessage}")
                 }
             }
         }
@@ -246,31 +456,6 @@ fun NotepadScreen(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            // Android Edition pill tag
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(4.dp))
-                                    .background(Color(0xFF3DDC84).copy(alpha = 0.18f))
-                                    .clickable { showAboutDialog = true }
-                                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Android,
-                                    contentDescription = "Android Edition",
-                                    tint = if (theme.isDark) Color(0xFF3DDC84) else Color(0xFF1B5E20),
-                                    modifier = Modifier.size(11.dp)
-                                )
-                                Spacer(modifier = Modifier.width(2.dp))
-                                Text(
-                                    text = "Android",
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = if (theme.isDark) Color(0xFF3DDC84) else Color(0xFF1B5E20),
-                                    fontFamily = FontFamily.Monospace
-                                )
-                            }
                         }
                         Spacer(modifier = Modifier.height(2.dp))
                         // Active doc subtitle badge
@@ -390,7 +575,10 @@ fun NotepadScreen(
                 hasBookmarks = uiState.bookmarks.isNotEmpty(),
                 theme = theme,
                 onSave = { viewModel.saveActiveDocument() },
-                onExportFile = { exportFileLauncher.launch(activeTitle) },
+                onExportFile = {
+                    pendingSaveAsSuggestedName = activeTitle
+                    exportFileLauncher.launch(activeTitle)
+                },
                 onOpenFile = { openFileLauncher.launch(arrayOf("*/*", "text/*")) },
                 onUndo = { viewModel.undo() },
                 onRedo = { viewModel.redo() },

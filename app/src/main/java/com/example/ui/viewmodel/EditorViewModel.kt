@@ -151,19 +151,36 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun selectDocument(docId: Long) {
-        val doc = _uiState.value.documents.firstOrNull { it.id == docId } ?: return
+        val currentActiveId = _uiState.value.activeDocumentId
+        val currentDocs = _uiState.value.documents
+        val updatedDocs = if (currentActiveId != null && _uiState.value.isModified) {
+            currentDocs.map { doc ->
+                if (doc.id == currentActiveId) {
+                    doc.copy(
+                        content = _uiState.value.editorValue.text,
+                        cursorPosition = _uiState.value.editorValue.selection.start,
+                        isModified = true
+                    )
+                } else doc
+            }
+        } else {
+            currentDocs
+        }
+
+        val doc = updatedDocs.firstOrNull { it.id == docId } ?: return
         val lang = SupportedLanguages.findById(doc.language)
         val bms = parseBookmarks(doc.bookmarks)
 
         _uiState.update {
             it.copy(
+                documents = updatedDocs,
                 activeDocumentId = docId,
                 editorValue = TextFieldValue(doc.content, TextRange(doc.cursorPosition.coerceIn(0, doc.content.length))),
                 activeLanguage = lang,
                 activeEncoding = doc.encoding,
                 activeLineEnding = doc.lineEnding,
                 bookmarks = bms,
-                isModified = false,
+                isModified = doc.isModified,
                 isFindBarVisible = false,
                 searchQuery = "",
                 searchMatches = emptyList(),
@@ -185,7 +202,24 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 orderIndex = count
             )
             val newId = repository.insert(newDoc)
-            selectDocument(newId)
+            val fullDoc = newDoc.copy(id = newId)
+            val updatedDocs = _uiState.value.documents.filter { it.id != newId } + fullDoc
+            _uiState.update {
+                it.copy(
+                    documents = updatedDocs,
+                    activeDocumentId = newId,
+                    editorValue = TextFieldValue(""),
+                    activeLanguage = SupportedLanguages.findById("text"),
+                    activeEncoding = "UTF-8",
+                    activeLineEnding = "LF",
+                    bookmarks = emptySet(),
+                    isModified = false,
+                    isFindBarVisible = false,
+                    searchQuery = "",
+                    searchMatches = emptyList(),
+                    activeSearchIndex = -1
+                )
+            }
             showFeedback("Created $title")
         }
     }
@@ -261,13 +295,47 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
                 language = detectedLang.id
             )
             repository.update(updated)
-            _uiState.update {
-                it.copy(
+            _uiState.update { current ->
+                val updatedDocs = current.documents.map { if (it.id == activeId) updated else it }
+                current.copy(
+                    documents = updatedDocs,
                     activeLanguage = detectedLang,
                     showRenameDialog = false
                 )
             }
             showFeedback("Renamed to $cleanTitle")
+        }
+    }
+
+    fun saveActiveDocumentAs(newFileName: String) {
+        val activeId = _uiState.value.activeDocumentId ?: return
+        val currentDoc = _uiState.value.documents.firstOrNull { it.id == activeId } ?: return
+        val cleanTitle = newFileName.trim().ifEmpty { currentDoc.title }
+        val detectedLang = SupportedLanguages.inferFromFilename(cleanTitle)
+        val contentText = _uiState.value.editorValue.text
+
+        viewModelScope.launch {
+            val updated = currentDoc.copy(
+                title = cleanTitle,
+                content = contentText,
+                language = detectedLang.id,
+                encoding = _uiState.value.activeEncoding,
+                lineEnding = _uiState.value.activeLineEnding,
+                bookmarks = serializeBookmarks(_uiState.value.bookmarks),
+                cursorPosition = _uiState.value.editorValue.selection.start,
+                isModified = false,
+                updatedAt = System.currentTimeMillis()
+            )
+            repository.update(updated)
+            _uiState.update { current ->
+                val updatedDocs = current.documents.map { if (it.id == activeId) updated else it }
+                current.copy(
+                    documents = updatedDocs,
+                    activeLanguage = detectedLang,
+                    isModified = false
+                )
+            }
+            showFeedback("Saved as $cleanTitle")
         }
     }
 
@@ -834,20 +902,64 @@ class EditorViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     // Load file content opened from system picker
+    // Preserves existing opened tabs (like desktop Notepad++) while immediately activating and displaying the newly loaded document.
     fun openFileFromSystem(fileName: String, content: String) {
         viewModelScope.launch {
             val lang = SupportedLanguages.inferFromFilename(fileName)
-            val count = _uiState.value.documents.size + 1
-            val newDoc = DocumentEntity(
-                title = fileName,
-                content = content,
-                language = lang.id,
-                encoding = "UTF-8",
-                lineEnding = if (content.contains("\r\n")) "CRLF" else "LF",
-                orderIndex = count
-            )
-            val newId = repository.insert(newDoc)
-            selectDocument(newId)
+            val lineEnding = if (content.contains("\r\n")) "CRLF" else "LF"
+            val currentDocs = _uiState.value.documents
+
+            // If the only open tab is an untouched, empty default document, reuse it
+            val shouldReplaceBlankDefault = currentDocs.size == 1 &&
+                    currentDocs.first().title.startsWith("new") &&
+                    currentDocs.first().content.isEmpty() &&
+                    !_uiState.value.isModified
+
+            val (newDoc, updatedDocs) = if (shouldReplaceBlankDefault) {
+                val existing = currentDocs.first()
+                val updated = existing.copy(
+                    title = fileName,
+                    content = content,
+                    language = lang.id,
+                    encoding = "UTF-8",
+                    lineEnding = lineEnding,
+                    bookmarks = "",
+                    cursorPosition = 0
+                )
+                repository.update(updated)
+                updated to listOf(updated)
+            } else {
+                val count = currentDocs.size + 1
+                val created = DocumentEntity(
+                    title = fileName,
+                    content = content,
+                    language = lang.id,
+                    encoding = "UTF-8",
+                    lineEnding = lineEnding,
+                    orderIndex = count
+                )
+                val newId = repository.insert(created)
+                val saved = created.copy(id = newId)
+                saved to (currentDocs.filter { it.id != newId } + saved)
+            }
+
+            _uiState.update {
+                it.copy(
+                    isLoading = false,
+                    documents = updatedDocs,
+                    activeDocumentId = newDoc.id,
+                    editorValue = TextFieldValue(content, TextRange(0)),
+                    activeLanguage = lang,
+                    activeEncoding = "UTF-8",
+                    activeLineEnding = lineEnding,
+                    bookmarks = emptySet(),
+                    isModified = false,
+                    isFindBarVisible = false,
+                    searchQuery = "",
+                    searchMatches = emptyList(),
+                    activeSearchIndex = -1
+                )
+            }
             showFeedback("Opened $fileName")
         }
     }

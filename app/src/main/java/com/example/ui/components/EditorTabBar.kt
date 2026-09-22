@@ -1,5 +1,6 @@
 package com.example.ui.components
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -14,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,6 +29,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,7 +43,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.DocumentEntity
 import com.example.ui.theme.EditorThemeColors
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun EditorTabBar(
     documents: List<DocumentEntity>,
@@ -53,6 +60,22 @@ fun EditorTabBar(
 ) {
     val scrollState = rememberScrollState()
 
+    // When a new document is created or loaded (or when active tab is the last tab),
+    // automatically scroll the tab bar so the last tab and the '+' button are within the view area.
+    LaunchedEffect(activeDocumentId, documents.size) {
+        if (documents.isNotEmpty() && activeDocumentId != null) {
+            val activeIndex = documents.indexOfFirst { it.id == activeDocumentId }
+            if (activeIndex == documents.size - 1 || activeIndex == -1) {
+                delay(50)
+                scrollState.animateScrollTo(scrollState.maxValue)
+                delay(50)
+                if (scrollState.value < scrollState.maxValue) {
+                    scrollState.animateScrollTo(scrollState.maxValue)
+                }
+            }
+        }
+    }
+
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -66,14 +89,16 @@ fun EditorTabBar(
                 .horizontalScroll(scrollState),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            documents.forEach { doc ->
+            documents.forEachIndexed { index, doc ->
                 val isSelected = doc.id == activeDocumentId
                 val isModified = if (isSelected) isCurrentModified else doc.isModified
+                val isLastTab = index == documents.size - 1
 
                 DocumentTabItem(
                     title = doc.title,
                     isSelected = isSelected,
                     isModified = isModified,
+                    isLastTab = isLastTab,
                     theme = theme,
                     onClick = { onTabSelected(doc.id) },
                     onClose = { onTabClosed(doc.id) },
@@ -96,15 +121,20 @@ fun EditorTabBar(
                     modifier = Modifier.size(20.dp)
                 )
             }
+
+            // Right-side breathing margin so the '+' button is always cleanly visible inside the view area
+            Spacer(modifier = Modifier.width(12.dp))
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun DocumentTabItem(
     title: String,
     isSelected: Boolean,
     isModified: Boolean,
+    isLastTab: Boolean,
     theme: EditorThemeColors,
     onClick: () -> Unit,
     onClose: () -> Unit,
@@ -113,9 +143,18 @@ private fun DocumentTabItem(
     val tabBg = if (isSelected) theme.background else theme.surface
     val textColor = if (isSelected) theme.text else theme.gutterText
     val borderColor = if (isSelected) theme.bookmarkColor else Color.Transparent
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+
+    // Ensure active non-last tabs are also scrolled smoothly into view when selected
+    LaunchedEffect(isSelected) {
+        if (isSelected && !isLastTab) {
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
 
     Box(
         modifier = Modifier
+            .bringIntoViewRequester(bringIntoViewRequester)
             .padding(start = 4.dp, end = 2.dp, top = 2.dp, bottom = 2.dp)
             .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
             .background(tabBg)

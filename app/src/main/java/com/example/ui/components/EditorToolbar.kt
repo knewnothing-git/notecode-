@@ -139,10 +139,10 @@ fun EditorToolbar(
                 onClick = onSave
             )
 
-            // Export / Save As to Device Storage
+            // Save As to Device Storage
             ToolbarButton(
                 icon = Icons.Default.SaveAs,
-                contentDescription = "Export / Save As to Device",
+                contentDescription = "Save As...",
                 testTag = "toolbar_export_file",
                 tint = theme.text.copy(alpha = 0.85f),
                 onClick = onExportFile
@@ -462,7 +462,7 @@ fun EditorToolbar(
                         }
                     )
                     DropdownMenuItem(
-                        text = { Text("Export / Save As to Device...") },
+                        text = { Text("Save As...") },
                         onClick = {
                             showMoreMenu = false
                             onExportFile()
